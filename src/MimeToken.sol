@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {ERC20} from "@oz/token/ERC20/ERC20.sol";
 import {Ownable} from "@oz/access/Ownable.sol";
 import {MerkleProof} from "@oz/utils/cryptography/MerkleProof.sol";
 
 error AlreadyClaimed();
 error InvalidProof();
 
-contract MimeToken is ERC20, Ownable {
+contract MimeToken is Ownable {
     uint256 private _currentRound;
+    string private _name;
+    string private _symbol;
 
     // round => merkle root.
     mapping(uint256 => bytes32) private _merkleRootAt;
@@ -20,20 +21,45 @@ contract MimeToken is ERC20, Ownable {
     // This is a packed array of booleans per round.
     mapping(uint256 => mapping(uint256 => uint256)) private _claimedBitMapAt;
 
+    event Mint(address indexed to, uint256 value, uint256 round);
     event Claimed(uint256 index, address account, uint256 amount, uint256 round);
-    event Transfer(address indexed from, address indexed to, uint256 value, uint256 round);
 
-    constructor(string memory name_, string memory symbol_, bytes32 merkleRoot_) ERC20(name_, symbol_) {
+    constructor(string memory name_, string memory symbol_, bytes32 merkleRoot_) {
+        _name = name_;
+        _symbol = symbol_;
         _merkleRootAt[_currentRound] = merkleRoot_;
     }
 
     /* *************************************************************************************************************************************/
-    /* ** Only Owner Functions                                                                                                                ***/
+    /* ** Only Owner Functions                                                                                                           ***/
     /* *************************************************************************************************************************************/
 
     function setNewRound(bytes32 merkleRoot_) public onlyOwner {
         _currentRound += 1;
         _merkleRootAt[_currentRound] = merkleRoot_;
+    }
+
+    /* *************************************************************************************************************************************/
+    /* ** ERC20 Functions                                                                                                                ***/
+    /* *************************************************************************************************************************************/
+
+    function totalSupply() public view returns (uint256) {
+        return _totalSupplyAt[_currentRound];
+    }
+
+    function balanceOf(address account) public view returns (uint256) {
+        return _balancesAt[_currentRound][account];
+    }
+
+    function _mint(address account, uint256 amount) internal {
+        require(account != address(0), "MimeToken: mint to the zero address");
+
+        _totalSupplyAt[_currentRound] += amount;
+        unchecked {
+            // Overflow not possible: balance + amount is at most totalSupply + amount, which is checked above.
+            _balancesAt[_currentRound][account] += amount;
+        }
+        emit Mint(account, amount, _currentRound);
     }
 
     /* *************************************************************************************************************************************/
@@ -77,62 +103,19 @@ contract MimeToken is ERC20, Ownable {
         return _currentRound;
     }
 
+    function name() public view returns (string memory) {
+        return _name;
+    }
+
+    function symbol() public view returns (string memory) {
+        return _symbol;
+    }
+
+    function decimals() public pure returns (uint8) {
+        return 18;
+    }
+
     function merkleRoot() public view returns (bytes32) {
         return _merkleRootAt[_currentRound];
-    }
-
-    /* *************************************************************************************************************************************/
-    /* ** ERC20 Interface                                                                                                                ***/
-    /* *************************************************************************************************************************************/
-
-    function totalSupply() public view override returns (uint256) {
-        return _totalSupplyAt[_currentRound];
-    }
-
-    function balanceOf(address account) public view override returns (uint256) {
-        return _balancesAt[_currentRound][account];
-    }
-
-    function _mint(address account, uint256 amount) internal override {
-        require(account != address(0), "ERC20: mint to the zero address");
-
-        _beforeTokenTransfer(address(0), account, amount);
-
-        _totalSupplyAt[_currentRound] += amount;
-        unchecked {
-            // Overflow not possible: balance + amount is at most totalSupply + amount, which is checked above.
-            _balancesAt[_currentRound][account] += amount;
-        }
-        emit Transfer(address(0), account, amount, _currentRound);
-
-        _afterTokenTransfer(address(0), account, amount);
-    }
-
-    /* *************************************************************************************************************************************/
-    /* ** ERC20 Interface Non Transferable Override                                                                                      ***/
-    /* *************************************************************************************************************************************/
-
-    function transfer(address to, uint256 amount) public override returns (bool) {
-        return false;
-    }
-
-    function allowance(address owner, address spender) public view override returns (uint256) {
-        return 0;
-    }
-
-    function approve(address spender, uint256 amount) public override returns (bool) {
-        return false;
-    }
-
-    function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
-        return false;
-    }
-
-    function increaseAllowance(address spender, uint256 addedValue) public override returns (bool) {
-        return false;
-    }
-
-    function decreaseAllowance(address spender, uint256 subtractedValue) public override returns (bool) {
-        return false;
     }
 }
