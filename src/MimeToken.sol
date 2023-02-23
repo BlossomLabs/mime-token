@@ -86,7 +86,7 @@ contract MimeToken is Ownable, IMimeToken {
 
         // Verify the merkle proof.
         bytes32 node = keccak256(abi.encodePacked(index, account, amount));
-        if (!MerkleProof.verify(merkleProof, _merkleRootAt[_currentRound], node)) revert InvalidProof();
+        if (!MerkleProof.verify(merkleProof, merkleRoot(), node)) revert InvalidProof();
 
         // Mark it claimed and mint tokens for current round.
         _setClaimed(index);
