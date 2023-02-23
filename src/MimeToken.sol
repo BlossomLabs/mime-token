@@ -4,10 +4,11 @@ pragma solidity ^0.8.17;
 import {Ownable} from "@oz/access/Ownable.sol";
 import {MerkleProof} from "@oz/utils/cryptography/MerkleProof.sol";
 
-import {IMimeToken} from "./IMimeToken.sol";
+import {IMimeToken} from "./interfaces/IMimeToken.sol";
 
 error AlreadyClaimed();
 error InvalidProof();
+error NonTransferable();
 
 contract MimeToken is Ownable, IMimeToken {
     uint256 private _currentRound;
@@ -43,12 +44,28 @@ contract MimeToken is Ownable, IMimeToken {
     /* ** ERC20 Functions                                                                                                                ***/
     /* *************************************************************************************************************************************/
 
-    function totalSupply() public view returns (uint256) {
+    function totalSupply() public view override returns (uint256) {
         return _totalSupplyAt[_currentRound];
     }
 
-    function balanceOf(address account) public view returns (uint256) {
+    function balanceOf(address account) public view override returns (uint256) {
         return _balancesAt[_currentRound][account];
+    }
+
+    function transfer(address to, uint256 amount) public override returns (bool) {
+        revert NonTransferable();
+    }
+
+    function allowance(address owner, address spender) public view override returns (uint256) {
+        revert NonTransferable();
+    }
+
+    function approve(address spender, uint256 amount) public override returns (bool) {
+        revert NonTransferable();
+    }
+
+    function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
+        revert NonTransferable();
     }
 
     function _mint(address account, uint256 amount) internal {
@@ -59,7 +76,6 @@ contract MimeToken is Ownable, IMimeToken {
             // Overflow not possible: balance + amount is at most totalSupply + amount, which is checked above.
             _balancesAt[_currentRound][account] += amount;
         }
-        emit Mint(_currentRound, account, amount);
     }
 
     /* *************************************************************************************************************************************/
