@@ -4,10 +4,12 @@ pragma solidity ^0.8.17;
 import {Ownable} from "@oz/access/Ownable.sol";
 import {MerkleProof} from "@oz/utils/cryptography/MerkleProof.sol";
 
+import {IMimeToken} from "./IMimeToken.sol";
+
 error AlreadyClaimed();
 error InvalidProof();
 
-contract MimeToken is Ownable {
+contract MimeToken is Ownable, IMimeToken {
     uint256 private _currentRound;
     string private _name;
     string private _symbol;
@@ -21,9 +23,6 @@ contract MimeToken is Ownable {
     // This is a packed array of booleans per round.
     mapping(uint256 => mapping(uint256 => uint256)) private _claimedBitMapAt;
 
-    event Mint(address indexed to, uint256 value, uint256 round);
-    event Claimed(uint256 index, address account, uint256 amount, uint256 round);
-
     constructor(string memory name_, string memory symbol_, bytes32 merkleRoot_) {
         _name = name_;
         _symbol = symbol_;
@@ -34,9 +33,10 @@ contract MimeToken is Ownable {
     /* ** Only Owner Functions                                                                                                           ***/
     /* *************************************************************************************************************************************/
 
-    function setNewRound(bytes32 merkleRoot_) public onlyOwner {
+    function setNewRound(bytes32 merkleRoot_) public onlyOwner returns (bool) {
         _currentRound += 1;
         _merkleRootAt[_currentRound] = merkleRoot_;
+        return true;
     }
 
     /* *************************************************************************************************************************************/
@@ -59,7 +59,7 @@ contract MimeToken is Ownable {
             // Overflow not possible: balance + amount is at most totalSupply + amount, which is checked above.
             _balancesAt[_currentRound][account] += amount;
         }
-        emit Mint(account, amount, _currentRound);
+        emit Mint(_currentRound, account, amount);
     }
 
     /* *************************************************************************************************************************************/
@@ -92,7 +92,7 @@ contract MimeToken is Ownable {
         _setClaimed(index);
         _mint(account, amount);
 
-        emit Claimed(index, account, amount, _currentRound);
+        emit Claimed(_currentRound, index, account, amount);
     }
 
     /* *************************************************************************************************************************************/
@@ -101,6 +101,10 @@ contract MimeToken is Ownable {
 
     function round() public view returns (uint256) {
         return _currentRound;
+    }
+
+    function merkleRoot() public view returns (bytes32) {
+        return _merkleRootAt[_currentRound];
     }
 
     function name() public view returns (string memory) {
@@ -113,9 +117,5 @@ contract MimeToken is Ownable {
 
     function decimals() public pure returns (uint8) {
         return 18;
-    }
-
-    function merkleRoot() public view returns (bytes32) {
-        return _merkleRootAt[_currentRound];
     }
 }
