@@ -62,7 +62,7 @@ contract MimeTokenTest is Test {
         mime.transferFrom(address(1), address(2), 1);
     }
 
-    function testsetNewRound() public {
+    function testSetNewRound() public {
         assertEq(mime.round(), 0);
         assertEq(mime.merkleRoot(), merkleRoot);
 
