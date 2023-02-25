@@ -7,7 +7,7 @@
 [license]: https://opensource.org/licenses/MIT
 [license-badge]: https://img.shields.io/badge/License-MIT-blue.svg
 
-MimeToken is a non-transferable token that inherits from the [ERC20 standard](https://ethereum.org/en/developers/docs/standards/tokens/erc-20/) and implements a modified version the [Uniswap MerkleDistributor](https://github.com/Uniswap/merkle-distributor/blob/master/contracts/MerkleDistributor.sol) logic. It allows accounts to claim their balances from an existing token by providing a merkle proof. The token uses a merkle tree of claims to store the balances, which can be updated to a new snapshot using a round functionality.
+MimeToken is a non-transferable token that inherits from the [ERC20 standard](https://ethereum.org/en/developers/docs/standards/tokens/erc-20/) and implements a modified version of the [Uniswap MerkleDistributor](https://github.com/Uniswap/merkle-distributor/blob/master/contracts/MerkleDistributor.sol) logic. It allows accounts to claim their balances from an existing token by providing a merkle proof. The token uses a merkle tree of claims to store the balances, which can be updated to a new snapshot using a round functionality.
 
 ## Motivation
 
