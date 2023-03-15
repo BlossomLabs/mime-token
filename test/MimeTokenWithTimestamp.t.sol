@@ -3,11 +3,12 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import {MimeToken, AlreadyClaimed, InvalidProof, NonTransferable} from "../src/MimeToken.sol";
+import {AlreadyClaimed, InvalidProof, NonTransferable} from "../src/MimeToken.sol";
+import {MimeTokenWithTimestamp} from "../src/MimeTokenWithTimestamp.sol";
 import {MimeTokenFactory} from "../src/MimeTokenFactory.sol";
 
-contract MimeTokenTest is Test {
-    MimeToken public mime;
+contract MimeTokenWithTimestampTest is Test {
+    MimeTokenWithTimestamp public mime;
 
     address owner = address(1);
     address notAuthorized = address(2);
@@ -23,13 +24,18 @@ contract MimeTokenTest is Test {
     uint256 index3 = 3;
     uint256 amount = 0x3635c9adc5dea00000;
 
+    uint256 timestamp;
+    uint256 duration = 604800; // 1 week
+
     event Claimed(uint256 indexed round, uint256 index, address account, uint256 amount);
 
     function setUp() public {
         MimeTokenFactory factory = new MimeTokenFactory();
 
+        timestamp = block.timestamp;
+
         vm.prank(owner);
-        mime = factory.createMimeToken("Mime Token", "MIME", merkleRoot);
+        mime = factory.createMimeTokenWithTimestamp("Mime Token", "MIME", merkleRoot, timestamp, duration);
 
         vm.label(address(mime), "mime");
         vm.label(address(factory), "factory");
@@ -47,6 +53,8 @@ contract MimeTokenTest is Test {
         assertEq(mime.name(), "Mime Token");
         assertEq(mime.symbol(), "MIME");
         assertEq(mime.decimals(), 18);
+        assertEq(mime.timestamp(), timestamp);
+        assertEq(mime.roundDuration(), duration);
     }
 
     function testNonTransfeable() public {
@@ -69,6 +77,11 @@ contract MimeTokenTest is Test {
 
         vm.prank(owner);
         mime.setNewRound(otherRoot);
+
+        assertEq(mime.round(), 0);
+        assertEq(mime.merkleRoot(), merkleRoot);
+
+        vm.warp(timestamp + duration + 1);
 
         assertEq(mime.round(), 1);
         assertEq(mime.merkleRoot(), otherRoot);
