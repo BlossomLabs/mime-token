@@ -34,10 +34,11 @@ contract MimeToken is Ownable, IMimeToken {
     /* ** Only Owner Functions                                                                                                           ***/
     /* *************************************************************************************************************************************/
 
-    function setNewRound(bytes32 merkleRoot_) public onlyOwner returns (bool) {
+    function setNewRound(bytes32 merkleRoot_) public onlyOwner {
         _currentRound += 1;
         _merkleRootAt[round()] = merkleRoot_;
-        return true;
+
+        emit NewRound(round(), merkleRoot_);
     }
 
     /* *************************************************************************************************************************************/

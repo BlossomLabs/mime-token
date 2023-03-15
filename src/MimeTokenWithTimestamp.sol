@@ -47,13 +47,14 @@ contract MimeTokenWithTimestamp is Ownable, IMimeTokenWithTimestamp {
     /* ** Only Owner Functions                                                                                                           ***/
     /* *************************************************************************************************************************************/
 
-    function setNewRound(bytes32 merkleRoot_) public onlyOwner returns (bool) {
+    function setNewRound(bytes32 merkleRoot_) public onlyOwner {
         uint256 nextRound = round() + 1;
         require(
             _merkleRootAt[nextRound] == bytes32(0), "MimeTokenWithDuration: merkle root already set for the next round"
         );
         _merkleRootAt[nextRound] = merkleRoot_;
-        return true;
+
+        emit NewRound(round(), merkleRoot_);
     }
 
     /* *************************************************************************************************************************************/

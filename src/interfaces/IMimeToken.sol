@@ -7,11 +7,13 @@ import {IERC20} from "@oz/token/ERC20/IERC20.sol";
 interface IMimeToken is IERC20 {
     // This event is triggered whenever a call to #claim succeeds.
     event Claimed(uint256 indexed round, uint256 index, address account, uint256 amount);
+    // This event is triggered whenever a call to #setNewRound succeeds.
+    event NewRound(uint256 indexed round, bytes32 merkleRoot);
 
     // Returns the current round of distribution.
     function round() external view returns (uint256);
     // Sets a new merkle root for current round. Only callable by owner.
-    function setNewRound(bytes32 merkleRoot_) external returns (bool);
+    function setNewRound(bytes32 merkleRoot_) external;
     // Returns the merkle root of the merkle tree containing account balances available to claim for current round.
     function merkleRoot() external view returns (bytes32);
     // Returns true if the index has been marked claimed on current round.
