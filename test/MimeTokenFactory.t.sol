@@ -7,7 +7,7 @@ import {MimeToken} from "../src/MimeToken.sol";
 import {MimeTokenWithTimestamp} from "../src/MimeTokenWithTimestamp.sol";
 import {MimeTokenFactory} from "../src/MimeTokenFactory.sol";
 
-contract MimeTokenTest is Test {
+contract MimeTokenFactoryTest is Test {
     MimeTokenFactory public factory;
 
     address owner = address(1);
