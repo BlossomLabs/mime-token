@@ -3,8 +3,6 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import {UpgradeableBeacon} from "@oz/proxy/beacon/UpgradeableBeacon.sol";
-
 import {MimeToken} from "../src/MimeToken.sol";
 
 import {BaseSetup} from "../script/BaseSetup.s.sol";
@@ -23,6 +21,15 @@ contract MimeTokenFactoryTest is Test, BaseSetup {
     function testInitialState() public {
         assertEq(factory.beacon().implementation(), implementation, "Beacon: mime implementation mismatch");
         assertEq(factory.beacon().owner(), deployer, "Beacon: owner mismatch");
+    }
+
+    function testBeaconUpgradability() public {
+        address newImplementation = setUpContract("MimeToken");
+
+        vm.prank(deployer);
+        factory.beacon().upgradeTo(newImplementation);
+
+        assertEq(factory.beacon().implementation(), newImplementation, "Beacon: implementation mismatch");
     }
 
     function testCreateMimeToken() public {

@@ -8,15 +8,10 @@ import {MimeTokenFactory} from "../src/MimeTokenFactory.sol";
 import {SetupScript} from "./SetupScript.s.sol";
 
 contract deploy is Script, SetupScript {
-    address implementation;
-
-    function setup() public {
-        implementation = setUpContract("MimeToken");
-    }
-
     function run() public {
         vm.startBroadcast();
 
+        address implementation = setUpContract("MimeToken");
         new MimeTokenFactory(implementation);
 
         vm.stopBroadcast();
