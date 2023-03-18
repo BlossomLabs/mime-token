@@ -24,9 +24,6 @@ interface IMimeToken is IERC20 {
     function name() external view returns (string memory);
     function symbol() external view returns (string memory);
     function decimals() external pure returns (uint8);
-}
-
-interface IMimeTokenWithTimestamp is IMimeToken {
     // Returns the initial timestamp of the token.
     function timestamp() external view returns (uint256);
     // Returns the duration of each round.

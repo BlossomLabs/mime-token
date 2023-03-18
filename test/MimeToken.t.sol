@@ -3,10 +3,12 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import {MimeToken, AlreadyClaimed, InvalidProof, NonTransferable} from "../src/MimeToken.sol";
+import {AlreadyClaimed, InvalidProof, MimeToken, NonTransferable} from "../src/MimeToken.sol";
 import {MimeTokenFactory} from "../src/MimeTokenFactory.sol";
 
-contract MimeTokenTest is Test {
+import {BaseSetup} from "../script/BaseSetup.s.sol";
+
+contract MimeTokenWithTimestampTest is Test, BaseSetup {
     MimeToken public mime;
 
     address owner = address(1);
@@ -23,30 +25,28 @@ contract MimeTokenTest is Test {
     uint256 index3 = 3;
     uint256 amount = 0x3635c9adc5dea00000;
 
+    uint256 timestamp;
+    uint256 duration = 604800; // 1 week
+
     event Claimed(uint256 indexed round, uint256 index, address account, uint256 amount);
 
-    function setUp() public {
-        MimeTokenFactory factory = new MimeTokenFactory();
+    function setUp() public override {
+        super.setUp();
+
+        timestamp = block.timestamp;
+
+        bytes memory initCall =
+            abi.encodeCall(MimeToken.initialize, ("Mime Token", "MIME", merkleRoot, timestamp, duration));
 
         vm.prank(owner);
-        mime = factory.createMimeToken("Mime Token", "MIME", merkleRoot);
+        mime = MimeToken(factory.createMimeToken(initCall));
 
         vm.label(address(mime), "mime");
-        vm.label(address(factory), "factory");
         vm.label(owner, "owner");
         vm.label(notAuthorized, "notAuthorized");
         vm.label(anvilAcount1, "anvilAcount1");
         vm.label(anvilAcount2, "anvilAcount2");
         vm.label(anvilAcount3, "anvilAcount3");
-    }
-
-    function testInitialState() public {
-        assertEq(mime.owner(), owner);
-        assertEq(mime.round(), 0);
-        assertEq(mime.merkleRoot(), merkleRoot);
-        assertEq(mime.name(), "Mime Token");
-        assertEq(mime.symbol(), "MIME");
-        assertEq(mime.decimals(), 18);
     }
 
     function testNonTransfeable() public {
@@ -69,6 +69,11 @@ contract MimeTokenTest is Test {
 
         vm.prank(owner);
         mime.setNewRound(otherRoot);
+
+        assertEq(mime.round(), 0);
+        assertEq(mime.merkleRoot(), merkleRoot);
+
+        vm.warp(timestamp + duration + 1);
 
         assertEq(mime.round(), 1);
         assertEq(mime.merkleRoot(), otherRoot);

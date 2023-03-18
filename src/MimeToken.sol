@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {Ownable} from "@oz/access/Ownable.sol";
+import {OwnableUpgradeable} from "@oz-upgradeable/access/OwnableUpgradeable.sol";
+import {Initializable} from "@oz-upgradeable/proxy/utils/Initializable.sol";
 import {MerkleProof} from "@oz/utils/cryptography/MerkleProof.sol";
 
 import {IMimeToken} from "./interfaces/IMimeToken.sol";
@@ -10,10 +11,12 @@ error AlreadyClaimed();
 error InvalidProof();
 error NonTransferable();
 
-contract MimeToken is Ownable, IMimeToken {
+contract MimeToken is Initializable, OwnableUpgradeable, IMimeToken {
     uint256 private _currentRound;
     string private _name;
     string private _symbol;
+    uint256 private _timestamp;
+    uint256 private _roundDuration;
 
     // round => merkle root.
     mapping(uint256 => bytes32) private _merkleRootAt;
@@ -24,9 +27,26 @@ contract MimeToken is Ownable, IMimeToken {
     // This is a packed array of booleans per round.
     mapping(uint256 => mapping(uint256 => uint256)) private _claimedBitMapAt;
 
-    constructor(string memory name_, string memory symbol_, bytes32 merkleRoot_) {
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
+        string memory name_,
+        string memory symbol_,
+        bytes32 merkleRoot_,
+        uint256 timestamp_,
+        uint256 roundDuration_
+    ) public initializer {
+        require(timestamp_ <= block.timestamp, "MimeTokenWithDuration: timestamp can not be in the future");
+        require(roundDuration_ > 0, "MimeTokenWithDuration: round duration must be greater than 0");
+
+        __Ownable_init();
+
         _name = name_;
         _symbol = symbol_;
+        _timestamp = timestamp_;
+        _roundDuration = roundDuration_;
         _merkleRootAt[round()] = merkleRoot_;
     }
 
@@ -35,8 +55,11 @@ contract MimeToken is Ownable, IMimeToken {
     /* *************************************************************************************************************************************/
 
     function setNewRound(bytes32 merkleRoot_) public onlyOwner {
-        _currentRound += 1;
-        _merkleRootAt[round()] = merkleRoot_;
+        uint256 nextRound = round() + 1;
+        require(
+            _merkleRootAt[nextRound] == bytes32(0), "MimeTokenWithDuration: merkle root already set for the next round"
+        );
+        _merkleRootAt[nextRound] = merkleRoot_;
 
         emit NewRound(round(), merkleRoot_);
     }
@@ -117,7 +140,15 @@ contract MimeToken is Ownable, IMimeToken {
     /* *************************************************************************************************************************************/
 
     function round() public view returns (uint256) {
-        return _currentRound;
+        return (block.timestamp - _timestamp) / _roundDuration;
+    }
+
+    function timestamp() public view returns (uint256) {
+        return _timestamp;
+    }
+
+    function roundDuration() public view returns (uint256) {
+        return _roundDuration;
     }
 
     function merkleRoot() public view returns (bytes32) {

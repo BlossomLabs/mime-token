@@ -1,52 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
+import {Ownable} from "@oz/access/Ownable.sol";
+import {BeaconProxy} from "@oz/proxy/beacon/BeaconProxy.sol";
+import {UpgradeableBeacon} from "@oz/proxy/beacon/UpgradeableBeacon.sol";
+
 import {MimeToken} from "./MimeToken.sol";
-import {MimeTokenWithTimestamp} from "./MimeTokenWithTimestamp.sol";
 
 contract MimeTokenFactory {
+    UpgradeableBeacon public immutable beacon;
+
     mapping(address => bool) public isMimeToken;
 
     event MimeTokenCreated(address token);
 
-    function createMimeToken(string calldata name, string calldata symbol, bytes32 merkleRoot)
-        public
-        returns (MimeToken)
-    {
-        MimeToken token = new MimeToken(
-            name,
-            symbol,
-            merkleRoot
-        );
-        token.transferOwnership(msg.sender);
-
-        isMimeToken[address(token)] = true;
-
-        emit MimeTokenCreated(address(token));
-
-        return token;
+    constructor(address _mimeTokenImplementation) {
+        beacon = new UpgradeableBeacon(_mimeTokenImplementation);
+        beacon.transferOwnership(msg.sender);
     }
 
-    function createMimeTokenWithTimestamp(
-        string calldata name,
-        string calldata symbol,
-        bytes32 merkleRoot,
-        uint256 timestamp,
-        uint256 roundDuration
-    ) public returns (MimeTokenWithTimestamp) {
-        MimeTokenWithTimestamp token = new MimeTokenWithTimestamp(
-            name,
-            symbol,
-            merkleRoot,
-            timestamp,
-            roundDuration
-        );
-        token.transferOwnership(msg.sender);
+    function createMimeToken(bytes calldata _initPayload) public returns (address proxy) {
+        proxy = address(new BeaconProxy(address(beacon), _initPayload));
+        isMimeToken[proxy] = true;
 
-        isMimeToken[address(token)] = true;
+        Ownable(proxy).transferOwnership(msg.sender);
 
-        emit MimeTokenCreated(address(token));
-
-        return token;
+        emit MimeTokenCreated(proxy);
     }
 }
