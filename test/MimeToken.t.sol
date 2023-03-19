@@ -8,7 +8,7 @@ import {MimeTokenFactory} from "../src/MimeTokenFactory.sol";
 
 import {BaseSetup} from "../script/BaseSetup.s.sol";
 
-contract MimeTokenWithTimestampTest is Test, BaseSetup {
+contract MimeTokenTest is Test, BaseSetup {
     MimeToken public mime;
 
     address owner = address(1);
