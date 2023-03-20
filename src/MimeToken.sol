@@ -15,7 +15,7 @@ contract MimeToken is Initializable, OwnableUpgradeable, IMimeToken {
     uint256 private _currentRound;
     string private _name;
     string private _symbol;
-    uint256 private _timestamp;
+    uint256 private _initialTimestamp;
     uint256 private _roundDuration;
 
     // round => merkle root.
@@ -45,7 +45,7 @@ contract MimeToken is Initializable, OwnableUpgradeable, IMimeToken {
 
         _name = name_;
         _symbol = symbol_;
-        _timestamp = timestamp_;
+        _initialTimestamp = timestamp_;
         _roundDuration = roundDuration_;
         _merkleRootAt[round()] = merkleRoot_;
     }
@@ -61,7 +61,7 @@ contract MimeToken is Initializable, OwnableUpgradeable, IMimeToken {
         );
         _merkleRootAt[nextRound] = merkleRoot_;
 
-        emit NewRound(round(), merkleRoot_);
+        emit NewRound(nextRound, merkleRoot_);
     }
 
     /* *************************************************************************************************************************************/
@@ -140,11 +140,11 @@ contract MimeToken is Initializable, OwnableUpgradeable, IMimeToken {
     /* *************************************************************************************************************************************/
 
     function round() public view returns (uint256) {
-        return (block.timestamp - _timestamp) / _roundDuration;
+        return (block.timestamp - _initialTimestamp) / _roundDuration;
     }
 
     function timestamp() public view returns (uint256) {
-        return _timestamp;
+        return _initialTimestamp;
     }
 
     function roundDuration() public view returns (uint256) {

@@ -29,6 +29,7 @@ contract MimeTokenTest is Test, BaseSetup {
     uint256 duration = 604800; // 1 week
 
     event Claimed(uint256 indexed round, uint256 index, address account, uint256 amount);
+    event NewRound(uint256 indexed round, bytes32 merkleRoot);
 
     function setUp() public override {
         super.setUp();
@@ -66,6 +67,9 @@ contract MimeTokenTest is Test, BaseSetup {
     function testSetNewRound() public {
         assertEq(mime.round(), 0);
         assertEq(mime.merkleRoot(), merkleRoot);
+
+        vm.expectEmit(true, false, false, true);
+        emit NewRound(mime.round() + 1, otherRoot);
 
         vm.prank(owner);
         mime.setNewRound(otherRoot);
