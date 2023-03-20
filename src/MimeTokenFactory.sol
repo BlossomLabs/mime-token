@@ -1,28 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
+import {Ownable} from "@oz/access/Ownable.sol";
+import {BeaconProxy} from "@oz/proxy/beacon/BeaconProxy.sol";
+import {UpgradeableBeacon} from "@oz/proxy/beacon/UpgradeableBeacon.sol";
+
 import {MimeToken} from "./MimeToken.sol";
 
 contract MimeTokenFactory {
+    UpgradeableBeacon public immutable beacon;
+
     mapping(address => bool) public isMimeToken;
 
     event MimeTokenCreated(address token);
 
-    function createMimeToken(string calldata name, string calldata symbol, bytes32 merkleRoot)
-        public
-        returns (MimeToken)
-    {
-        MimeToken token = new MimeToken(
-            name,
-            symbol,
-            merkleRoot
-        );
-        token.transferOwnership(msg.sender);
+    constructor(address _mimeTokenImplementation) {
+        beacon = new UpgradeableBeacon(_mimeTokenImplementation);
+        beacon.transferOwnership(msg.sender);
+    }
 
-        isMimeToken[address(token)] = true;
+    function createMimeToken(bytes calldata _initPayload) public returns (address proxy) {
+        proxy = address(new BeaconProxy(address(beacon), _initPayload));
+        isMimeToken[proxy] = true;
 
-        emit MimeTokenCreated(address(token));
+        Ownable(proxy).transferOwnership(msg.sender);
 
-        return token;
+        emit MimeTokenCreated(proxy);
     }
 }

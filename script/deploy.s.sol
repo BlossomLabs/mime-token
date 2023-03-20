@@ -5,11 +5,14 @@ import "forge-std/Script.sol";
 
 import {MimeTokenFactory} from "../src/MimeTokenFactory.sol";
 
-contract deploy is Script {
+import {SetupScript} from "./SetupScript.s.sol";
+
+contract deploy is Script, SetupScript {
     function run() public {
         vm.startBroadcast();
 
-        new MimeTokenFactory();
+        address implementation = setUpContract("MimeToken");
+        new MimeTokenFactory(implementation);
 
         vm.stopBroadcast();
     }

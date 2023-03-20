@@ -3,10 +3,12 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import {MimeToken, AlreadyClaimed, InvalidProof, NonTransferable} from "../src/MimeToken.sol";
+import {AlreadyClaimed, InvalidProof, MimeToken, NonTransferable} from "../src/MimeToken.sol";
 import {MimeTokenFactory} from "../src/MimeTokenFactory.sol";
 
-contract MimeTokenTest is Test {
+import {BaseSetup} from "../script/BaseSetup.s.sol";
+
+contract MimeTokenTest is Test, BaseSetup {
     MimeToken public mime;
 
     address owner = address(1);
@@ -17,35 +19,35 @@ contract MimeTokenTest is Test {
 
     // merkle tree data
     bytes32 merkleRoot = 0x47c52ef48ec180964d648c3783e0b02202f16211392b986fbe2627f021657f2b; // using: https://gist.github.com/0xGabi/4ca04edae9753ec32ffed7dc0cffe31e
+    bytes32 otherRoot = 0xdefa96435aec82d201dbd2e5f050fb4e1fef5edac90ce1e03953f916a5e1132d;
     uint256 index0 = 0;
     uint256 index2 = 2;
     uint256 index3 = 3;
     uint256 amount = 0x3635c9adc5dea00000;
 
-    event Claimed(uint256 indexed round, uint256 index, address account, uint256 amount);
+    uint256 timestamp;
+    uint256 duration = 604800; // 1 week
 
-    function setUp() public {
-        MimeTokenFactory factory = new MimeTokenFactory();
+    event Claimed(uint256 indexed round, uint256 index, address account, uint256 amount);
+    event NewRound(uint256 indexed round, bytes32 merkleRoot);
+
+    function setUp() public override {
+        super.setUp();
+
+        timestamp = block.timestamp;
+
+        bytes memory initCall =
+            abi.encodeCall(MimeToken.initialize, ("Mime Token", "MIME", merkleRoot, timestamp, duration));
 
         vm.prank(owner);
-        mime = factory.createMimeToken("Mime Token", "MIME", merkleRoot);
+        mime = MimeToken(factory.createMimeToken(initCall));
 
         vm.label(address(mime), "mime");
-        vm.label(address(factory), "factory");
         vm.label(owner, "owner");
         vm.label(notAuthorized, "notAuthorized");
         vm.label(anvilAcount1, "anvilAcount1");
         vm.label(anvilAcount2, "anvilAcount2");
         vm.label(anvilAcount3, "anvilAcount3");
-    }
-
-    function testInitialState() public {
-        assertEq(mime.owner(), owner);
-        assertEq(mime.round(), 0);
-        assertEq(mime.merkleRoot(), merkleRoot);
-        assertEq(mime.name(), "Mime Token");
-        assertEq(mime.symbol(), "MIME");
-        assertEq(mime.decimals(), 18);
     }
 
     function testNonTransfeable() public {
@@ -66,11 +68,19 @@ contract MimeTokenTest is Test {
         assertEq(mime.round(), 0);
         assertEq(mime.merkleRoot(), merkleRoot);
 
+        vm.expectEmit(true, false, false, true);
+        emit NewRound(mime.round() + 1, otherRoot);
+
         vm.prank(owner);
-        mime.setNewRound(bytes32(0));
+        mime.setNewRound(otherRoot);
+
+        assertEq(mime.round(), 0);
+        assertEq(mime.merkleRoot(), merkleRoot);
+
+        vm.warp(timestamp + duration + 1);
 
         assertEq(mime.round(), 1);
-        assertEq(mime.merkleRoot(), bytes32(0));
+        assertEq(mime.merkleRoot(), otherRoot);
     }
 
     function testNewRoundWhenNotOwner() public {
